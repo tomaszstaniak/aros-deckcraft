@@ -1,22 +1,21 @@
 # DeckCraft for AROS
 
-A port of [DeckCraft](https://github.com/storytold/deckcraft), a presentation
-program written in Rust, to AROS x86_64 ABIv11, with mainline v1 retained as a
-secondary target.
+An AROS port of [DeckCraft](https://github.com/storytold/deckcraft), a presentation editor. It opens and saves PPTX presentations and exports PDF and images.
 
-The repository holds the source pins, the patch series and the build tooling,
-not a source checkout. The pinned source is DeckCraft `22db9261` (tag v0.8.0).
-The editor runs in a native Intuition window (`apps/deckcraft-aros`, added by
-the series) on [egui-aros](https://github.com/tomaszstaniak/egui-aros), the shared AROS window, input and renderer layer of
-the ArtCraft ports, pinned in `upstreams.json`.
+## Download and run
 
-Status: the editor (`DeckCraft`) and `deckcraft-cli` (with the MCP server over
-stdio) build for x86_64 ABIv11 and have been run on an ABIv11 guest. Mainline
-v1 is not built. Details and the exact tested scope:
-[development](docs/development.md). Patch handling: [patching](docs/patching.md).
+[Download v0.8.0-test1-r2](https://github.com/tomaszstaniak/aros-deckcraft/releases/tag/v0.8.0-test1-r2) for **AROS x86_64 ABIv11**, or find `deckcraft` in the apkg catalogue. The download includes DeckCraft and `deckcraft-cli`.
 
-[upstreams.json](upstreams.json) identifies the sources;
-[patches/deckcraft/series](patches/deckcraft/series) the changes to DeckCraft;
-`patches/crates`, `patches/libc-aros` and `patches/aros-pthread` the changes to
-dependencies. `packaging/` holds the test packages' recipes. Generated
-checkouts and outputs are ignored.
+These builds are experimental and not optimised. They use CPU rendering and can be slow, especially in large windows.
+
+Unpack the archive into a drawer and double-click the DeckCraft icon. From a Shell, run `Stack 4000000` before starting `DeckCraft`.
+
+## Known limitations
+
+There is no audio output or printing; export to PDF for printing elsewhere. The clipboard supports plain text, but not pictures or formatting. File drops are unavailable. Japanese, Chinese and Arabic text may appear as boxes, and non-Latin-1 keyboard layouts can produce incorrect characters. Run one instance at a time: simultaneous instances can interfere with AutoRecover files.
+
+## Build from source
+
+This repository contains source revisions, AROS patches and build scripts. See [Building](docs/development.md), [Patch workflow](docs/patching.md) and [Source revisions](upstreams.json). The window and renderer use [egui-aros](https://github.com/tomaszstaniak/egui-aros), pinned in `upstreams.json`.
+
+The repository stores build recipes rather than a full upstream source tree. Licenses and author notices are included in the source and application archives.
