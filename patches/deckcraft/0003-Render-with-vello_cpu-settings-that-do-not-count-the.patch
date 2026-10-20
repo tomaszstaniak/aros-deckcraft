@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tomaszstaniak <68373859+tomaszstaniak@users.noreply.github.com>
+Date: Tue, 20 Oct 2026 11:09:44 +0200
+Subject: [PATCH] Render with vello_cpu settings that do not count the CPUs
+
+Problem: vello_cpu 0.2's RenderSettings::default() (with the multithreading
+  feature, as the renderer builds on native targets) computes num_threads
+  with std::thread::available_parallelism().unwrap(). AROS's std cannot
+  count CPUs and returns an error, so every slide, layout and metafile
+  render would panic, even where the struct update then replaces
+  num_threads.
+Rationale: one render_settings(num_threads) function builds the settings
+  from the same SIMD level detection the default uses and the requested
+  thread count; every RenderContext in the renderer uses it. The same
+  change as the WordCraft AROS port's render patch.
+Scope: crates/render; identical settings on every target where the default
+  did not panic.
+Upstream-status: candidate (also a vello_cpu issue: its default should not
+  unwrap available_parallelism).
+Verification: deckcraft-render checks on the host; AROS renders in the
+  port's evidence.
+Removal: when vello_cpu's default no longer unwraps the CPU count.
+---
+ crates/render/src/lib.rs      | 15 +++++++++++----
+ crates/render/src/metafile.rs |  2 +-
+ 2 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/crates/render/src/lib.rs b/crates/render/src/lib.rs
+index 93b0dc955e8b4808186de9ed308fd6a015bd3506..489423211397c3ee5bfeb2b40802a726afecc328 100644
+--- a/crates/render/src/lib.rs
++++ b/crates/render/src/lib.rs
+@@ -209,6 +209,13 @@ impl Default for ParaState {
+     }
+ }
+ 
++/// vello_cpu's settings with `num_threads` workers. Not `..Default::default()`: vello_cpu's
++/// default counts the CPUs with `available_parallelism().unwrap()`, which panics where std cannot
++/// count them (AROS), even when the count is then replaced.
++pub fn render_settings(num_threads: u16) -> vello_cpu::RenderSettings {
++    vello_cpu::RenderSettings { level: vello_cpu::Level::try_detect().unwrap_or(vello_cpu::Level::baseline()), num_threads }
++}
++
+ pub struct RenderOpts<'a> {
+     /// Pixels per point.
+     pub scale: f64,
+@@ -617,7 +624,7 @@ impl Renderer {
+         let mut ctx = RenderContext::new_with(
+             w,
+             h,
+-            vello_cpu::RenderSettings { num_threads: if cfg!(target_arch = "wasm32") || filters { 0 } else { opts.threads }, ..Default::default() },
++            render_settings(if cfg!(target_arch = "wasm32") || filters { 0 } else { opts.threads }),
+         );
+         if let Some(c) = opts.clear {
+             ctx.set_paint(color(c, 1.0));
+@@ -753,7 +760,7 @@ impl Renderer {
+ 
+     fn layout(&mut self, pres: &Presentation, mi: usize, li: Option<usize>, opts: &RenderOpts) -> Image {
+         let (w, h) = output_size(pres, opts);
+-        let mut ctx = RenderContext::new_with(w, h, vello_cpu::RenderSettings { num_threads: 0, ..Default::default() });
++        let mut ctx = RenderContext::new_with(w, h, render_settings(0));
+         let view = Affine::translate((opts.offset.0, opts.offset.1)) * Affine::scale(opts.scale);
+         let f = Frame { pres, opts, fields: SlideFields::new(1, String::new(), opts) };
+         if let Some(m) = pres.masters.get(mi) {
+@@ -2325,7 +2332,7 @@ pub fn render_shapes(pres: &Presentation, slide: &Slide, ids: &[ShapeId], scale:
+     }
+     let w = (b.width() * fit).ceil().clamp(1.0, 2048.0) as u16;
+     let h = (b.height() * fit).ceil().clamp(1.0, 2048.0) as u16;
+-    let mut ctx = RenderContext::new_with(w, h, vello_cpu::RenderSettings { num_threads: 0, ..Default::default() });
++    let mut ctx = RenderContext::new_with(w, h, render_settings(0));
+     let opts = RenderOpts { scale: fit, ..Default::default() };
+     let f = Frame { pres, opts: &opts, fields: SlideFields::new(1, String::new(), &opts) };
+     let view = Affine::scale(fit) * Affine::translate(-b.origin().to_vec2());
+@@ -2346,7 +2353,7 @@ pub fn render_shape(pres: &Presentation, slide: &Slide, id: ShapeId, scale: f64)
+     let b = x.bounds().inflate(8.0, 8.0);
+     let w = (b.width() * scale).ceil().clamp(1.0, MAX_SIDE as f64) as u16;
+     let h = (b.height() * scale).ceil().clamp(1.0, MAX_SIDE as f64) as u16;
+-    let mut ctx = RenderContext::new_with(w, h, vello_cpu::RenderSettings { num_threads: 0, ..Default::default() });
++    let mut ctx = RenderContext::new_with(w, h, render_settings(0));
+     let opts = RenderOpts { scale, ..Default::default() };
+     let f = Frame { pres, opts: &opts, fields: SlideFields::new(1, String::new(), &opts) };
+     let view = Affine::scale(scale) * Affine::translate(-b.origin().to_vec2());
+diff --git a/crates/render/src/metafile.rs b/crates/render/src/metafile.rs
+index bb9da83f2d20911b1dba940b60c50b598e291bc8..61391d8e0454e14b1a055ec26e410cca794eb298 100644
+--- a/crates/render/src/metafile.rs
++++ b/crates/render/src/metafile.rs
+@@ -46,7 +46,7 @@ pub fn rasterize(bytes: &[u8], side: u32) -> Option<image::RgbaImage> {
+     let pixmaps: Vec<Option<Arc<Pixmap>>> = pic.items.iter_mut().map(|it| it.take_pixels().and_then(|(w, h, px)| premul(w, h, &px))).collect();
+     // Pattern tiles shared by several fills are converted once.
+     let mut tiles: HashMap<*const Tile, (Option<Arc<Pixmap>>, peniko::Color)> = HashMap::new();
+-    let mut ctx = RenderContext::new_with(w, h, vello_cpu::RenderSettings { num_threads: 0, ..Default::default() });
++    let mut ctx = RenderContext::new_with(w, h, crate::render_settings(0));
+     let r = Rect::new(0.0, 0.0, w as f64, h as f64);
+     ctx.push_clip_layer(&r.to_path(0.1));
+     for it in pic.place(r, [0.0; 4]) {

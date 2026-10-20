@@ -1,0 +1,6 @@
+0001-Lock-libc-0.2.189-for-the-AROS-libc-replacement.patch
+0002-deckcraft-cli-own-stack-and-an-ending-rayon-pool-on-.patch
+0003-Render-with-vello_cpu-settings-that-do-not-count-the.patch
+0004-Add-deckcraft-aros-the-editor-in-an-Intuition-window.patch
+0005-deckcraft-aros-sleep-until-there-is-something-to-do-.patch
+0006-deckcraft-aros-screenshot-draws-frames-until-the-pic.patch

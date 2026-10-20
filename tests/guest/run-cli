@@ -1,0 +1,31 @@
+; DeckCraft CLI smoke, run RUN. Results: RESULTS:RUN-*
+FailAt 21
+Protect RAM:dc/deckcraft-cli +e
+List RAM:dc >RESULTS:RUN-list.txt
+Echo "RUN start" >RESULTS:RUN-start.txt
+RAM:dc/deckcraft-cli --version >RESULTS:RUN-version.txt
+Echo $RC >RESULTS:RUN-version.rc
+RAM:dc/deckcraft-cli info RAM:dc/hello.pptx >RESULTS:RUN-info.txt
+Echo $RC >RESULTS:RUN-info.rc
+RAM:dc/deckcraft-cli render RAM:dc/hello.pptx --slide 1 --scale 1 RAM:dc/s2.png >RESULTS:RUN-render.txt
+Echo $RC >RESULTS:RUN-render.rc
+RAM:dc/deckcraft-cli convert RAM:dc/hello.pptx RAM:dc/out.pdf >RESULTS:RUN-pdf.txt
+Echo $RC >RESULTS:RUN-pdf.rc
+RAM:dc/deckcraft-cli convert RAM:dc/hello.pptx RAM:dc/out.md >RESULTS:RUN-md.txt
+Echo $RC >RESULTS:RUN-md.rc
+RAM:dc/deckcraft-cli run --in RAM:dc/hello.pptx --cmd "slide.new={*"layout*":*"titleOnly*",*"title*":*"Written on AROS*"}" --save RAM:dc/edited.pptx >RESULTS:RUN-run.txt
+Echo $RC >RESULTS:RUN-run.rc
+; Save over the file just written: an existing destination must be replaced.
+RAM:dc/deckcraft-cli run --in RAM:dc/edited.pptx --cmd "slide.new={*"title*":*"Second save*"}" --save RAM:dc/edited.pptx >RESULTS:RUN-run2.txt
+Echo $RC >RESULTS:RUN-run2.rc
+RAM:dc/deckcraft-cli convert RAM:dc/edited.pptx RAM:dc/edited.md >RESULTS:RUN-md2.txt
+Echo $RC >RESULTS:RUN-md2.rc
+RAM:dc/deckcraft-cli mcp <RAM:dc/mcp-in.txt >RESULTS:RUN-mcp.txt
+Echo $RC >RESULTS:RUN-mcp.rc
+Copy RAM:dc/s2.png RESULTS:RUN-s2.png
+Copy RAM:dc/out.pdf RESULTS:RUN-out.pdf
+Copy RAM:dc/out.md RESULTS:RUN-out.md
+Copy RAM:dc/edited.pptx RESULTS:RUN-edited.pptx
+Copy RAM:dc/edited.md RESULTS:RUN-edited.md
+List RAM:dc >RESULTS:RUN-list2.txt
+Echo "RUN done" >RESULTS:RUN-done.txt

@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tomaszstaniak <68373859+tomaszstaniak@users.noreply.github.com>
+Date: Tue, 20 Oct 2026 12:01:12 +0200
+Subject: [PATCH] deckcraft-aros: sleep until there is something to do;
+ per-frame log at debug level
+
+Problem: the shell asked egui-aros for an idle poll every 500 ms, and each
+  poll is a full frame, which the CPU renderer pays for in full. With the
+  window untouched QEMU used about 19 (DeckCraft) and 11 (GridCraft)
+  CPU-seconds per 30 seconds on pool v11-2 under TCG, against 0.9 for the
+  bare desktop (run k2).
+Rationale: as eframe on the desktop, the loop now sleeps until input, a
+  repaint the app asks for (it does so while a background open or a timed
+  message is pending) or a wake-up from another thread. With RUST_LOG=debug
+  every frame logs what woke the loop and what the frame cost, so idle
+  behaviour can be checked from the log.
+Scope: the AROS shell only.
+Upstream-status: local-only.
+Verification: idle CPU measured again in the port's evidence.
+Removal: with the shell.
+---
+ apps/deckcraft-aros/src/main.rs | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/apps/deckcraft-aros/src/main.rs b/apps/deckcraft-aros/src/main.rs
+index b53ed262323bf0a10cf04b98b54eed11c05bdd1f..9ebad02491a0fe14f0bb4938c7d5099d543db756 100644
+--- a/apps/deckcraft-aros/src/main.rs
++++ b/apps/deckcraft-aros/src/main.rs
+@@ -19,14 +19,10 @@ use std::cell::RefCell;
+ use std::path::PathBuf;
+ use std::rc::Rc;
+ use std::sync::Mutex;
+-use std::time::Duration;
+ 
+ use deckcraft_engine::Session;
+ use deckcraft_ui_egui::SlideApp;
+ 
+-/// Longest sleep when nothing asks for a repaint: AutoRecover and finished background opens
+-/// still get their turn.
+-const IDLE_POLL: Duration = Duration::from_millis(500);
+ 
+ struct Logger;
+ 
+@@ -255,6 +251,12 @@ impl egui_aros::App for Shell {
+     }
+ 
+     fn frame_done(&mut self, report: &egui_aros::FrameReport, renderer: &egui_aros::raster::Renderer) {
++        // RUST_LOG=debug: one line per frame, to see what woke the loop and what the frame cost.
++        log::debug!(
++            "frame {} {}x{}: slept {:?} (timeout {:?}, by timeout {}), late {:?}, events {}, logic {:?} ui {:?} tessellate {:?} raster {:?} present {:?}, next repaint {:?}",
++            report.frame, report.width, report.height, report.waited, report.wait_timeout, report.woke_by_timeout, report.repaint_late,
++            report.events, report.logic, report.ui, report.tessellate, report.raster, report.present, report.next_repaint
++        );
+         if let Some((path, frames)) = &self.screenshot
+             && report.frame >= *frames
+         {
+@@ -281,7 +283,11 @@ fn run(options: Options) -> i32 {
+         inner_size: (w, h),
+         min_inner_size: Some((640, 400)),
+         clear_color: [0xf3, 0xf3, 0xf3],
+-        idle_poll: Some(IDLE_POLL),
++        // No idle poll: as eframe on the desktop, the loop sleeps until input, a repaint the app
++        // asks for (it does while it waits for a background open or shows a timed message), or a
++        // wake-up from another thread. A poll is a full frame, which the CPU renderer pays for in
++        // full: every 500 ms kept QEMU busy at over half a core with the window untouched.
++        idle_poll: None,
+         measure_paint: false,
+         // A build drawing with OpenGL says so in the title, so a screenshot names the variant.
+         title_suffix: if cfg!(feature = "glow") { " [GL]".to_owned() } else { String::new() },
