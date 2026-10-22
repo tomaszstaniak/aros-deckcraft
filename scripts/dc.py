@@ -507,7 +507,11 @@ def cmd_build(args):
     fonts_dir, fonts = craft_fonts_latin(root)
 
     # getrandom has no AROS backend; deckcraft-aros-entropy supplies the custom one.
-    flags = ["-Cpanic=" + cfg["panic"], "--cfg", 'getrandom_backend="custom"', f"--remap-path-prefix={src}=/deckcraft",
+    # The build root first: patched crates and the egui-aros vendor tree live under it, and their
+    # panic locations would otherwise carry this machine's paths. A later, more specific prefix
+    # (the source copy, libc-aros) wins where both match.
+    flags = ["-Cpanic=" + cfg["panic"], "--cfg", 'getrandom_backend="custom"', f"--remap-path-prefix={root}=/build",
+             f"--remap-path-prefix={src}=/deckcraft",
              f"--remap-path-prefix={cfg['cargo_home']}=/cargo", f"--remap-path-prefix={libc}=/libc-aros",
              f"--remap-path-prefix={run(['rustc', '+' + cfg['toolchain'], '--print', 'sysroot']).stdout.decode().strip()}=/rust"]
     if cfg["panic"] == "unwind":
@@ -545,6 +549,10 @@ def cmd_build(args):
                 raise Failure(f"unknown package {package}; choose from {sorted(PACKAGES)}")
             command += ["-p", package]
         binary_names = [PACKAGES[p] for p in packages]
+    # Release builds: whole-program LTO, which with the stripping at packaging keeps the programs
+    # within what apkg accepts for one file (at the same optimisation level).
+    if args.lto == "fat":
+        command += ["--config", 'profile.release.lto="fat"']
     if args.no_default_features:
         command.append("--no-default-features")
     if args.features:
@@ -687,6 +695,7 @@ def main():
     b.add_argument("-p", "--package", action="append", default=[], help="deckcraft-aros, deckcraft-cli (default: both)")
     b.add_argument("--features", help="cargo --features")
     b.add_argument("--no-default-features", action="store_true")
+    b.add_argument("--lto", choices=["fat"], help="whole-program LTO (release builds)")
     b.add_argument("--worktree", action="store_true", help="build uncommitted files too (recorded as such)")
     b.add_argument("--online", action="store_true", help="allow cargo to download missing crates")
     b.add_argument("--tool", choices=sorted(TOOLS), help="build a test tool from tests/ instead of DeckCraft")
