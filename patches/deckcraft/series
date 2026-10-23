@@ -6,3 +6,5 @@
 0006-deckcraft-aros-screenshot-draws-frames-until-the-pic.patch
 0007-deckcraft-aros-keep-the-main-task-s-startup-director.patch
 0008-deckcraft-aros-name-the-startup-directory-in-full-wh.patch
+0009-deckcraft-aros-keep-the-startup-directory-with-an-em.patch
+0010-deckcraft-aros-make-document-names-from-the-command-.patch

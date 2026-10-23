@@ -4,7 +4,7 @@ An AROS port of [DeckCraft](https://github.com/storytold/deckcraft), a presentat
 
 ## Download and run
 
-[Download v0.8.0-test3](https://github.com/tomaszstaniak/aros-deckcraft/releases/tag/v0.8.0-test3) for **AROS x86_64 ABIv11**, or find `deckcraft` in the apkg catalogue. The download includes DeckCraft and `deckcraft-cli`.
+[Download v0.8.0-test4](https://github.com/tomaszstaniak/aros-deckcraft/releases/tag/v0.8.0-test4) for **AROS x86_64 ABIv11**, or find `deckcraft` in the apkg catalogue. The download includes DeckCraft and `deckcraft-cli`.
 
 These builds are experimental and not optimised. They use CPU rendering and can be slow, especially in large windows.
 
