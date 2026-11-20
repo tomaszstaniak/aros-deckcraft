@@ -1,36 +1,36 @@
 .KEY RUNDIR/A,MACHINE/A
 .BRA [
 .KET ]
-; Upgrade check with apkg from local indexes, everything under RAM:. Payload in RAM:t: apkg,
+; Upgrade check with apkg from local indexes, everything under RAM:. Payload in RAM:ctest: apkg,
 ; old.zip + idx-old.json (the previous release), dc.zip + idx.json (the new package),
 ; steps-pkg.json, steps-pkg2.json, hello.pptx. The previous release is installed and used once,
 ; then upgraded; the new program is verified, used twice and removed.
-; Execute RAM:t/run-upgrade <results directory> <machine name>
+; Execute RAM:ctest/run-upgrade <results directory> <machine name>
 FailAt 21
-Protect RAM:t/apkg +e
+Protect RAM:ctest/apkg +e
 MakeDir RAM:pk
 MakeDir RAM:pk/cache
-Copy RAM:t/old.zip RAM:pk/cache/deckcraft.zip
-RAM:t/apkg --root RAM:pk --machine [MACHINE] --index RAM:t/idx-old.json install deckcraft --yes >[RUNDIR]/old-install.txt
+Copy RAM:ctest/old.zip RAM:pk/cache/deckcraft.zip
+RAM:ctest/apkg --root RAM:pk --machine [MACHINE] --index RAM:ctest/idx-old.json install deckcraft --yes >[RUNDIR]/old-install.txt
 Echo $RC >[RUNDIR]/old-install.rc
 Stack 4000000
-RAM:pk/DeckCraft/deckcraft-cli run --in RAM:t/hello.pptx --cmd "slide.new={*"title*":*"Old release*"}" --save RAM:t/old-saved.pptx >[RUNDIR]/old-cli.txt
+RAM:pk/DeckCraft/deckcraft-cli run --in RAM:ctest/hello.pptx --cmd "slide.new={*"title*":*"Old release*"}" --save RAM:ctest/old-saved.pptx >[RUNDIR]/old-cli.txt
 Echo $RC >[RUNDIR]/old-cli.rc
-RAM:pk/DeckCraft/DeckCraft --window 900x560 --screenshot RAM:t/old.png --screenshot-frames 6 RAM:t/old-saved.pptx
+RAM:pk/DeckCraft/DeckCraft --window 900x560 --screenshot RAM:ctest/old.png --screenshot-frames 6 RAM:ctest/old-saved.pptx
 Echo $RC >[RUNDIR]/old-gui.rc
 MakeDir RAM:pk/DeckCraft/DeckCraftData
 Echo "user file kept across the upgrade" >RAM:pk/DeckCraft/DeckCraftData/marker.txt
 List RAM:pk/DeckCraft ALL >[RUNDIR]/before-upgrade.txt
-Copy RAM:t/dc.zip RAM:pk/cache/deckcraft.new.zip
-RAM:t/apkg --root RAM:pk --machine [MACHINE] --index RAM:t/idx.json outdated >[RUNDIR]/outdated.txt
-RAM:t/apkg --root RAM:pk --machine [MACHINE] --index RAM:t/idx.json upgrade deckcraft --yes >[RUNDIR]/upgrade.txt
+Copy RAM:ctest/dc.zip RAM:pk/cache/deckcraft.new.zip
+RAM:ctest/apkg --root RAM:pk --machine [MACHINE] --index RAM:ctest/idx.json outdated >[RUNDIR]/outdated.txt
+RAM:ctest/apkg --root RAM:pk --machine [MACHINE] --index RAM:ctest/idx.json upgrade deckcraft --yes >[RUNDIR]/upgrade.txt
 Echo $RC >[RUNDIR]/upgrade.rc
-RAM:t/apkg --root RAM:pk --machine [MACHINE] --index RAM:t/idx.json verify deckcraft >[RUNDIR]/verify.txt
+RAM:ctest/apkg --root RAM:pk --machine [MACHINE] --index RAM:ctest/idx.json verify deckcraft >[RUNDIR]/verify.txt
 Echo $RC >[RUNDIR]/verify.rc
 List RAM:pk/DeckCraft ALL >[RUNDIR]/after-upgrade.txt
 Type RAM:pk/DeckCraft/DeckCraftData/marker.txt >[RUNDIR]/marker.txt
-Execute RAM:t/run-use [RUNDIR]
-RAM:t/apkg --root RAM:pk --machine [MACHINE] --index RAM:t/idx.json remove deckcraft --yes >[RUNDIR]/remove.txt
+Execute RAM:ctest/run-use [RUNDIR]
+RAM:ctest/apkg --root RAM:pk --machine [MACHINE] --index RAM:ctest/idx.json remove deckcraft --yes >[RUNDIR]/remove.txt
 Echo $RC >[RUNDIR]/remove.rc
 List RAM:pk ALL >[RUNDIR]/after-remove.txt
 Echo "done" >[RUNDIR]/upgrade-done.txt

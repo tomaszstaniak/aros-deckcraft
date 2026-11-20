@@ -1,10 +1,10 @@
 [
   {"frame": 6, "run": "slide.new", "params": {"layout": "titleOnly", "title": "Typed in the window"}},
-  {"frame": 10, "screenshot": "/RAM/t/pkg-a.png"},
-  {"frame": 12, "run": "file.saveAs", "params": {"path": "/RAM/t/pkg-saved.pptx"}},
+  {"frame": 10, "screenshot": "/RAM/ctest/pkg-a.png"},
+  {"frame": 12, "run": "file.saveAs", "params": {"path": "/RAM/ctest/pkg-saved.pptx"}},
   {"frame": 14, "run": "edit.undo", "params": {}},
   {"frame": 16, "run": "edit.redo", "params": {}},
   {"frame": 18, "run": "file.save", "params": {}},
-  {"frame": 20, "screenshot": "/RAM/t/pkg-a2.png"},
+  {"frame": 20, "screenshot": "/RAM/ctest/pkg-a2.png"},
   {"frame": 24, "quit": true}
 ]
