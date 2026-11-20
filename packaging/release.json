@@ -1,0 +1,92 @@
+{
+  "name": "DeckCraft",
+  "version": "0.18.1",
+  "release": "0.18.1",
+  "upstream_version": "0.18.1 (tag v0.18.1, 7cc73ab1)",
+  "drawer": "DeckCraft",
+  "stack": 16777216,
+  "tooltypes": [
+    "GUI_RENDERER=AUTO"
+  ],
+  "icon_source": "work:assets/app-icon/hicolor/64x64/apps/ai.storyteller.deckcraft.png",
+  "source_archive": "DeckCraft-0.18.1-source.zip",
+  "source_archive_exclude": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "project.json"
+  ],
+  "notices": [
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "NOTICE",
+    "ATTRIBUTION.md",
+    "licenses/pdf-writer/LICENSE-ICC.txt"
+  ],
+  "targets": {
+    "aros-x86_64-abiv11-pc": {
+      "system": "AROS x86_64, ABIv11 distributions",
+      "sdk": "x86_64 ABIv11 SDK (deadwood2/AROS)",
+      "notice": "notices/aros-x86_64-abiv11-pc.txt",
+      "build": {
+        "lto": null,
+        "panic": "unwind",
+        "features": []
+      },
+      "limitations": [
+        "- OpenGL: AROS One 1.3 has only Mesa's software renderer, so AUTO uses CPU",
+        "  there. GPU works with it but draws a frame in seconds; use it only to try."
+      ]
+    },
+    "aros-x86_64-abiv1-pc": {
+      "system": "AROS x86_64, mainline ABIv1 (nightly 2026-11-06 or later)",
+      "sdk": "x86_64 mainline ABIv1 SDK of nightly 2026-11-10",
+      "notice": "notices/aros-x86_64-abiv1-pc.txt",
+      "build": {
+        "lto": null,
+        "panic": "abort",
+        "features": []
+      },
+      "limitations": [
+        "- AUTO uses CPU on this system: a program that has opened OpenGL leaves its",
+        "  log file in use after it ends, and the Shell it ran in stops redirecting",
+        "  the output of later programs (seen on nightly 2026-11-10). GPU opens",
+        "  OpenGL all the same; with VirGL in an emulator it drew correctly but took",
+        "  about ten seconds a frame. Hardware OpenGL drivers have not been tested."
+      ]
+    },
+    "aros-aarch64-abiv1-raspi": {
+      "system": "AROS on Raspberry Pi, AArch64 ABIv1 (nightly 2026-11-06 or later)",
+      "sdk": "Raspberry Pi AArch64 ABIv1 SDK of nightly 2026-11-10",
+      "notice": "notices/aros-aarch64-abiv1-raspi.txt",
+      "build": {
+        "lto": null,
+        "panic": "abort",
+        "features": []
+      },
+      "limitations": [
+        "- OpenGL has not been tested on Pi hardware, so AUTO uses CPU. GPU opens",
+        "  OpenGL; save your work before you try it.",
+        "- Tested in an emulator only, not on a physical Raspberry Pi."
+      ]
+    }
+  },
+  "limitations": [
+    "- Media in presentations plays without sound: there is no audio output.",
+    "- No printing: export to PDF instead. Files dropped on the window are not",
+    "  opened, and Presenter View needs a second display, which is not offered.",
+    "- Formatted (HTML) clipboard content is not available; copy and paste use",
+    "  plain text and pictures.",
+    "- Changes of the whole window (scrolling, zooming, opening a dialog) redraw",
+    "  all of it; on slow machines and in emulators these follow with a delay.",
+    "- Run one DeckCraft at a time: AutoRecover cannot tell that another",
+    "  DeckCraft is running and may take over its recovery data.",
+    "- Only Latin-script fonts are built in. Chinese, Japanese, Korean, Arabic",
+    "  and emoji characters are kept in presentations but shown as boxes.",
+    "- The slide show, transitions, video, pasting a picture from the clipboard,",
+    "  the file requesters and keyboard layouts other than the US one have not",
+    "  been tested on AROS in this release.",
+    "- No automatic updates: install new versions with the AROS package manager",
+    "  or by unpacking the new archive. The MCP server (deckcraft-cli mcp) has",
+    "  been tested only for its handshake on AROS."
+  ]
+}

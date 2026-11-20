@@ -1,0 +1,27 @@
+{
+  "comment": "The app this Craft port builds. scripts/craft.py runs the shared Craft tools pinned in scripts/tooling.json; they read only this file for app-specific names.",
+  "id": "deckcraft",
+  "name": "DeckCraft",
+  "env_prefix": "DECKCRAFT",
+  "packages": {
+    "deckcraft-aros": "DeckCraft",
+    "deckcraft-cli": "deckcraft-cli"
+  },
+  "tools": {},
+  "craft_fonts": {
+    "comment": "Latin-script fonts only: the CJK, Arabic and Chinese faces (about 80 MB more) are left out of the AROS programs, which AROS loads into memory whole. Families DeckCraft's build.rs never embeds are left out of the copy too.",
+    "manifests": [
+      "fonts/latin-manifest.txt"
+    ],
+    "empty": [
+      "fonts/manifest.txt"
+    ],
+    "exclude_families": [
+      "Source Sans 3",
+      "Source Serif 4",
+      "Source Han Sans",
+      "Source Han Serif",
+      "Noto Sans CJK SC"
+    ]
+  }
+}

@@ -2,21 +2,39 @@
   "repositories": {
     "deckcraft": {
       "url": "https://github.com/storytold/deckcraft.git",
-      "commit": "22db9261f9d1a214c296fd390173130c45d76d66",
+      "commit": "7cc73ab1895ed2e30c8afbcada20c70b9ea0a440",
       "license": "MIT OR Apache-2.0",
-      "role": "build source (tag v0.8.0); patches/deckcraft/series applies to it"
+      "role": "build source (tag v0.18.1, 2026-11-11); patches/deckcraft/series applies in order",
+      "tag": "v0.18.1",
+      "note": "previous base: v0.8.0 22db9261f9d1a214c296fd390173130c45d76d66 (series 0001-0010 until 2026-11-20, in git history)"
+    },
+    "storytold-egui": {
+      "url": "https://github.com/storytold/egui.git",
+      "commit": "6d518fc799681571963842f95b55a6b68431b15a",
+      "license": "MIT OR Apache-2.0",
+      "role": "egui/eframe/egui-winit/egui_glow 0.37.0 as locked by DeckCraft v0.18.1 (same revision as WordCraft 0.18.1); AROS patches via egui-aros",
+      "prepared_by": "egui-aros"
+    },
+    "storytold-winit": {
+      "url": "https://github.com/storytold/winit.git",
+      "commit": "a517b3846ee8457d84ee4975110bfda6797c44dc",
+      "license": "Apache-2.0",
+      "role": "winit 0.30.13 fork as locked by DeckCraft v0.18.1; contrib AROS backend applied via egui-aros",
+      "prepared_by": "egui-aros"
     },
     "egui-aros": {
       "url": "https://github.com/tomaszstaniak/egui-aros.git",
-      "commit": "95ae1edc8c246c7194cb9e1506bc3fdb951879e8",
+      "commit": "d7abdeb29cbc718d712b2edbc0e206d0e12f72d2",
+      "branch": "egui-0.37",
       "license": "MIT OR Apache-2.0",
-      "role": "shared egui integration for AROS (window, input, CPU renderer, ASL); set egui_aros in local.json to a clone of it; scripts vendor this commit and its crate patches for the build"
+      "role": "shared GUI integration (egui 0.37); consumed through its ea.py vendor, never copied",
+      "note": "branch egui-0.37 with the CPU renderer that repaints only changed tiles (2026-11-13)"
     },
     "craft-fonts": {
       "url": "https://github.com/storytold/craft-fonts.git",
-      "commit": "43913056ce82a3fdad0ef69f6b88d1dc922a8104",
+      "commit": "37827adc41fd165f9a9234ac40f94dbad353aa69",
       "license": "repository Apache-2.0; fonts under their own licences (OFL-1.1 for the Latin set used)",
-      "role": "font data, the commit DeckCraft 0.8.0's release workflow embeds; scripts/dc.py builds with its Latin-script fonts only (CRAFT_FONTS_DIR)"
+      "role": "font data, the commit DeckCraft 0.18.1's release workflow embeds; the build embeds its Latin-script set only (scripts/port.json craft_fonts)"
     }
   }
 }

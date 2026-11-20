@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tomaszstaniak <68373859+tomaszstaniak@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 18:12:15 +0100
+Subject: [PATCH] AROS: build without the self-updater
+
+Releases for AROS come through the AROS package catalogue, and craft-update's HTTPS stack (hyper, rustls, aws-lc-sys with its C/CMake build) has no AROS build. The updater is left out on target_os = "aros" the way the web build leaves it out; Check for Updates says where AROS updates come from.
+---
+ crates/ui-egui/Cargo.toml          |  4 +++-
+ crates/ui-egui/src/app.rs          | 12 ++++++------
+ crates/ui-egui/src/app/commands.rs |  6 ++++--
+ crates/ui-egui/src/dialogs.rs      |  2 +-
+ crates/ui-egui/src/lib.rs          |  6 +++---
+ 5 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/crates/ui-egui/Cargo.toml b/crates/ui-egui/Cargo.toml
+index 166eba22089d4d1479b3136d4f6e62e5218cf332..79c38a11b3fbc7c852de213485264b5f7023db9d 100644
+--- a/crates/ui-egui/Cargo.toml
++++ b/crates/ui-egui/Cargo.toml
+@@ -26,7 +26,9 @@ serde_json = { workspace = true }
+ log = { workspace = true }
+ web-time = { workspace = true }
+ 
+-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
++# AROS: no self-update. Releases come through the AROS package catalogue, and the updater's
++# HTTPS stack (hyper, rustls, aws-lc-sys with its C/CMake build) has no AROS build.
++[target.'cfg(not(any(target_arch = "wasm32", target_os = "aros")))'.dependencies]
+ craft-update = { workspace = true }
+ 
+ [dev-dependencies]
+diff --git a/crates/ui-egui/src/app.rs b/crates/ui-egui/src/app.rs
+index 8cc53258ed79d2d58a32e2519793f51baf655b11..d2e988dcc1e2e14457b3b9ce901beaed0be5322d 100644
+--- a/crates/ui-egui/src/app.rs
++++ b/crates/ui-egui/src/app.rs
+@@ -2,7 +2,7 @@ use super::clock::{monotonic_secs, now_ms};
+ use super::ime_hooks::ime_in_ui_pass_key;
+ use super::services::{InboxEvent, Services};
+ use super::state::{FilePlace, FilePurpose, ImeDescriptorKey, ImeDestination, ImeTerminalStamp, LocatedPlace, RECENT_MAX, UiState, ViewMode};
+-#[cfg(not(target_arch = "wasm32"))]
++#[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+ use super::updates_ui;
+ use super::{
+     AnimPreview, ControlRequest, FileTarget, HashMap, ImeCancelled, ImeComposition, ImeResetPhase, ImeTerminalPending, InputTarget, Mods,
+@@ -83,7 +83,7 @@ impl SlideApp {
+             backstage: None,
+             pending_urls: vec![],
+             print_previews: files::PrintPreviews::default(),
+-            #[cfg(not(target_arch = "wasm32"))]
++            #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+             updates_rt: updates_ui::Runtime::default(),
+             pending_copy: None,
+             capture: capture::Capture::default(),
+@@ -132,7 +132,7 @@ impl SlideApp {
+ 
+     /// Turn on the automatic check for a newer release at start-up (desktop shell only; tests and
+     /// the web build never touch the network on their own).
+-    #[cfg(not(target_arch = "wasm32"))]
++    #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+     pub fn enable_update_checks(&mut self) {
+         updates_ui::enable(self);
+     }
+@@ -140,7 +140,7 @@ impl SlideApp {
+     /// Start the helper of an update that is ready, so that it installs once the process has
+     /// exited. The desktop shell calls it in `on_exit`, which ends the process on macOS before the
+     /// app is dropped. Later calls do nothing.
+-    #[cfg(not(target_arch = "wasm32"))]
++    #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+     pub fn start_pending_update(&mut self) {
+         updates_ui::start_pending_update(self);
+     }
+@@ -229,7 +229,7 @@ impl SlideApp {
+         if !self.synthetic_batch_is_live(ctx) {
+             self.drain_control(ctx);
+             self.poll_opening();
+-            #[cfg(not(target_arch = "wasm32"))]
++            #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+             updates_ui::tick(self, ctx);
+             // Inbox results are host file bytes and do not need fonts or a painted frame. A
+             // window that starts hidden must still apply a file picked before its first UI pass.
+@@ -358,7 +358,7 @@ impl SlideApp {
+         toast::note_missing_fonts(self);
+         toast::show(self, &ctx);
+         dialogs::show(self, &ctx);
+-        #[cfg(not(target_arch = "wasm32"))]
++        #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+         updates_ui::show(self, &ctx);
+         menus::palette(self, &ctx);
+         for url in std::mem::take(&mut self.pending_urls) {
+diff --git a/crates/ui-egui/src/app/commands.rs b/crates/ui-egui/src/app/commands.rs
+index 718b95acea8abb89d432c69b08700a8939e50e50..7c59dc1de2b035aec5016c11e800e322592876c3 100644
+--- a/crates/ui-egui/src/app/commands.rs
++++ b/crates/ui-egui/src/app/commands.rs
+@@ -1,4 +1,4 @@
+-#[cfg(not(target_arch = "wasm32"))]
++#[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+ use super::updates_ui;
+ use super::{SlideApp, UI_COMMANDS, Value, ViewMode, backstage, dialogs, doc_window, json, media, qat, theme};
+ 
+@@ -227,10 +227,12 @@ impl SlideApp {
+             }
+             "app.about" => self.dialog = Some(dialogs::Dialog::new("about")),
+             "app.checkUpdates" => {
+-                #[cfg(not(target_arch = "wasm32"))]
++                #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+                 updates_ui::request_check(self);
+                 #[cfg(target_arch = "wasm32")]
+                 return Err("updates are handled by the browser: reload the page".into());
++                #[cfg(target_os = "aros")]
++                return Err("DeckCraft for AROS is updated through the AROS package catalogue (apkg)".into());
+             }
+             "app.palette" => self.palette = Some((String::new(), 0)),
+             "app.preferences" => self.dialog = Some(dialogs::Dialog::new("preferences")),
+diff --git a/crates/ui-egui/src/dialogs.rs b/crates/ui-egui/src/dialogs.rs
+index ed33b9cd6838fe124af94322345ce75e4a3d2567..ae2f4a7610295b50159917560472839e896242af 100644
+--- a/crates/ui-egui/src/dialogs.rs
++++ b/crates/ui-egui/src/dialogs.rs
+@@ -298,7 +298,7 @@ fn inches_text(v: Option<&Value>) -> String {
+ pub mod credits;
+ #[cfg(test)]
+ mod font_dialog_tests;
+-#[cfg(not(target_arch = "wasm32"))]
++#[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+ pub(super) mod updates_ui;
+ 
+ #[cfg(test)]
+diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
+index 08fcc2391286cb9fe8c3afb4b3588869ba0d82b5..6bd64adc4b188254b18c752702059f9204ac7429 100644
+--- a/crates/ui-egui/src/lib.rs
++++ b/crates/ui-egui/src/lib.rs
+@@ -8,7 +8,7 @@
+ 
+ /// DeckCraft as craft-update knows it, with its 128 px icon and accent colour: the update
+ /// prompt shows both, and an AppImage's menu entry gets the icon.
+-#[cfg(not(target_arch = "wasm32"))]
++#[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+ pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
+     icon_png: Some(include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.deckcraft.png")),
+     accent: Some([0xf0, 0x7a, 0x1e]),
+@@ -62,7 +62,7 @@ use canvas::preview;
+ pub use canvas::squiggles;
+ pub use clock::{monotonic_secs, now_ms};
+ pub use dialogs::credits;
+-#[cfg(not(target_arch = "wasm32"))]
++#[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+ use dialogs::updates_ui;
+ pub use ime_hooks::install_ime_pass_hooks;
+ pub use panels as panes;
+@@ -295,7 +295,7 @@ pub struct SlideApp {
+     pub backstage: Option<backstage::Backstage>,
+     pending_urls: Vec<String>,
+     print_previews: app::files::PrintPreviews,
+-    #[cfg(not(target_arch = "wasm32"))]
++    #[cfg(not(any(target_arch = "wasm32", target_os = "aros")))]
+     updates_rt: updates_ui::Runtime,
+     /// Text for the system clipboard from a Copy or Cut command, handed over on the next frame.
+     pending_copy: Option<String>,

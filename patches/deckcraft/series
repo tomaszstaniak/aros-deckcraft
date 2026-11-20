@@ -1,10 +1,7 @@
-0001-Lock-libc-0.2.189-for-the-AROS-libc-replacement.patch
-0002-deckcraft-cli-own-stack-and-an-ending-rayon-pool-on-.patch
-0003-Render-with-vello_cpu-settings-that-do-not-count-the.patch
-0004-Add-deckcraft-aros-the-editor-in-an-Intuition-window.patch
-0005-deckcraft-aros-sleep-until-there-is-something-to-do-.patch
-0006-deckcraft-aros-screenshot-draws-frames-until-the-pic.patch
-0007-deckcraft-aros-keep-the-main-task-s-startup-director.patch
-0008-deckcraft-aros-name-the-startup-directory-in-full-wh.patch
-0009-deckcraft-aros-keep-the-startup-directory-with-an-em.patch
-0010-deckcraft-aros-make-document-names-from-the-command-.patch
+0001-AROS-build-without-the-self-updater.patch
+0002-AROS-the-CLI-runs-its-command-on-its-own-stack-and-e.patch
+0003-AROS-FONTS-as-the-system-font-folder.patch
+0004-engine-recovery-closes-its-temporary-file-before-it-.patch
+0005-AROS-host-DeckCraft-in-an-Intuition-window-through-e.patch
+0006-AROS-the-CLI-writes-its-output-through-std-s-standar.patch
+0007-AROS-the-CLI-turns-DOS-volume-requesters-off.patch

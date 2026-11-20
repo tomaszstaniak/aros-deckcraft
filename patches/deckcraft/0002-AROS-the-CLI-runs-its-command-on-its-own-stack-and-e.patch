@@ -1,23 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: tomaszstaniak <68373859+tomaszstaniak@users.noreply.github.com>
-Date: Tue, 20 Oct 2026 11:09:44 +0200
-Subject: [PATCH] deckcraft-cli: own stack and an ending rayon pool on AROS
+Date: Fri, 20 Nov 2026 18:12:35 +0100
+Subject: [PATCH] AROS: the CLI runs its command on its own stack and ends
+ rayon's pool
 
-Problem: an AROS program runs on the stack of whatever starts it (40,960
-  bytes in an AROS One Shell, and whatever an MCP client's process creation
-  gives); parsing, layout and rendering overrun that. And AROS's pthread
-  library joins every thread in its exit handler, so rayon's idle global
-  workers (krilla's PDF export, the video decoders) keep a command that used
-  them from ever exiting.
-Rationale: the command runs on a thread with an 8 MiB stack; its exit code
-  returns to the main task (exit() from another thread crashes on ABIv11),
-  and the global pool is ended there with the port's patched rayon-core
-  (terminate_global_thread_pool), as in the WordCraft and PhotoCraft ports.
-Scope: AROS only; other targets run as before.
-Upstream-status: local-only.
-Verification: built for x86_64 ABIv11; native runs in the port's evidence.
-Removal: when AROS programs get a sufficient stack by other means and the
-  pthread library no longer waits for pool threads.
+An AROS program runs on the stack of whatever starts it (40,960 bytes in an AROS One Shell); parsing, layout and rendering overrun that. The command runs on a thread with an 8 MiB stack and its exit code returns to the main task. AROS's pthread library joins every thread at exit, and rayon's idle global workers (PDF export, the video decoders) never end by themselves: the patched rayon-core ends them first.
 ---
  Cargo.lock                     |  1 +
  apps/deckcraft-cli/Cargo.toml  |  5 +++++
@@ -25,36 +12,38 @@ Removal: when AROS programs get a sufficient stack by other means and the
  3 files changed, 34 insertions(+)
 
 diff --git a/Cargo.lock b/Cargo.lock
-index b37952da527182a2f5a75eb14c4cbb182b8c838c..bd2d9fec304a2a706fa1e4151a6a0762bdcd623d 100644
+index 61cc764810ad80c1b072b4db654988e0ee69bc1d..62bef68fd606e1d4639cbe7f869ba1cb8d743ccb 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -940,6 +940,7 @@ version = "0.8.0"
+@@ -1089,6 +1089,7 @@ version = "0.18.1"
  dependencies = [
   "deckcraft-engine",
   "deckcraft-mcp",
 + "rayon-core",
   "serde_json",
+  "zip 3.0.0",
  ]
- 
 diff --git a/apps/deckcraft-cli/Cargo.toml b/apps/deckcraft-cli/Cargo.toml
-index 898a1fb34ca200dc534545bfbbeba7ef4148f034..94e9dc93fb97b7af5caddda32fe98ea55b901375 100644
+index 6d2f572ebf728735c610da6dd8f50236dfdab31a..98125b618cb0b9da125b643c3bfaaa87fcc4874c 100644
 --- a/apps/deckcraft-cli/Cargo.toml
 +++ b/apps/deckcraft-cli/Cargo.toml
-@@ -17,3 +17,8 @@ path = "src/main.rs"
- deckcraft-engine = { workspace = true }
+@@ -18,5 +18,10 @@ deckcraft-engine = { workspace = true }
  deckcraft-mcp = { workspace = true }
  serde_json = { workspace = true }
-+
+ 
 +# The patched rayon-core (see the AROS port's crate patches) can end the global pool's threads,
 +# which AROS's pthread library otherwise waits for forever when the program exits.
 +[target.'cfg(target_os = "aros")'.dependencies]
 +rayon-core = "1.13"
++
+ [dev-dependencies]
+ zip = { workspace = true }
 diff --git a/apps/deckcraft-cli/src/main.rs b/apps/deckcraft-cli/src/main.rs
-index 5934973ed7b457cd0dc8aedc45602fec1d8b9e96..e7b122c37ac054c378261e0941f47e437e4c274f 100644
+index 5701b72f82584a4687f8e180959815c55d77d659..aad886f8cbce05a1ef008e102309624027442e5b 100644
 --- a/apps/deckcraft-cli/src/main.rs
 +++ b/apps/deckcraft-cli/src/main.rs
-@@ -24,7 +24,35 @@ macro_rules! outln {
-     }};
+@@ -39,7 +39,35 @@ fn stdout_line(args: std::fmt::Arguments<'_>) -> std::io::Result<()> {
+     stdout.write_all(format!("{args}\n").as_bytes())
  }
  
 +/// The command thread's stack on AROS (see `main`).

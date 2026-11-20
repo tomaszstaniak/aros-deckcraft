@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tomaszstaniak <68373859+tomaszstaniak@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 18:15:48 +0100
+Subject: [PATCH] engine: recovery closes its temporary file before it replaces
+ the entry
+
+write_atomic renamed the temporary file over the recovery entry while still holding it open. On AROS the C library's rename replaces an existing destination only when it can lock the source exclusively, so every AutoRecover update of an existing entry would fail with "File exists (os error 17)" (the same fault the GridCraft port found in its workbook save). The file is closed first; the temporary file is still removed when the rename fails. Upstream candidate: io.rs write_file already closes first.
+---
+ crates/engine/src/recovery.rs | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/crates/engine/src/recovery.rs b/crates/engine/src/recovery.rs
+index d8c9f23efbe286b27b543320e581de319a2d7ed0..8a978151426d7da68d58a7bea1a86659f65fb327 100644
+--- a/crates/engine/src/recovery.rs
++++ b/crates/engine/src/recovery.rs
+@@ -95,7 +95,12 @@ fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
+         opts.mode(0o600);
+     }
+     let mut file = opts.open(&tmp).map_err(|e| EngineError::Other(format!("{}: {e}", tmp.display())))?;
+-    file.write_all(bytes).and_then(|()| file.sync_all()).and_then(|()| std::fs::rename(&tmp, path)).map_err(|e| {
++    let written = file.write_all(bytes).and_then(|()| file.sync_all());
++    // Closed before the replacement: a system that renames by name and needs the source to
++    // itself (AROS's C library replaces the destination only when it can lock the source
++    // exclusively) would otherwise refuse to replace an existing entry.
++    drop(file);
++    written.and_then(|()| std::fs::rename(&tmp, path)).map_err(|e| {
+         let _ = std::fs::remove_file(&tmp);
+         EngineError::Other(format!("{}: {e}", path.display()))
+     })

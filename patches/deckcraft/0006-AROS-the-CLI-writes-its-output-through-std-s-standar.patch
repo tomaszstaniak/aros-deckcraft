@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tomaszstaniak <68373859+tomaszstaniak@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 18:28:15 +0100
+Subject: [PATCH] AROS: the CLI writes its output through std's standard output
+ handle
+
+stdout_line duplicates the standard output descriptor on unix targets (an owned File for each line). On AROS x86_64 ABIv11 the duplicate fails with "Invalid argument (os error 22)", so deckcraft-cli --version already stopped with "can't write to stdout", and the exit that follows, from the command thread, raised a Software Failure (pool v11-1, run 20261120-182458-56c38cb1). AROS uses std::io::stdout(), as non-unix targets do.
+---
+ apps/deckcraft-cli/src/main.rs | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/apps/deckcraft-cli/src/main.rs b/apps/deckcraft-cli/src/main.rs
+index aad886f8cbce05a1ef008e102309624027442e5b..ac032b47f0d191a9c17cdbcc5a862ca4f87e14bb 100644
+--- a/apps/deckcraft-cli/src/main.rs
++++ b/apps/deckcraft-cli/src/main.rs
+@@ -29,12 +29,14 @@ macro_rules! outln {
+ 
+ fn stdout_line(args: std::fmt::Arguments<'_>) -> std::io::Result<()> {
+     use std::io::Write as _;
+-    #[cfg(unix)]
++    #[cfg(all(unix, not(target_os = "aros")))]
+     let mut stdout = {
+         use std::os::fd::AsFd as _;
+         std::fs::File::from(std::io::stdout().as_fd().try_clone_to_owned()?)
+     };
+-    #[cfg(not(unix))]
++    // AROS: duplicating the standard output descriptor fails with EINVAL (ABIv11's C library),
++    // and the CLI then stopped at its first line of output. std's handle writes to it directly.
++    #[cfg(not(all(unix, not(target_os = "aros"))))]
+     let mut stdout = std::io::stdout();
+     stdout.write_all(format!("{args}\n").as_bytes())
+ }

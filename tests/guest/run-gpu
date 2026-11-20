@@ -1,0 +1,25 @@
+.KEY RUNDIR/A
+.BRA [
+.KET ]
+; DeckCraft with OpenGL forced (GUI_RENDERER GPU): a screenshot start with a file and the
+; scripted edit. Unpack the payload to RAM:dc, then: Execute RAM:dc/run-gpu <results directory>
+FailAt 21
+Protect RAM:dc/DeckCraft +e
+Protect RAM:dc/deckcraft-cli +e
+SetEnv RUST_LOG info
+SetEnv DECKCRAFT_CONFIG_DIR RAM:dc/data
+Echo "start" >[RUNDIR]/start.txt
+SetEnv DECKCRAFT_LOG RAM:dc/gpu-1.txt
+RAM:dc/DeckCraft --gui-renderer GPU --window 900x560 --screenshot RAM:dc/gpu-shot.png --screenshot-frames 6 RAM:dc/hello.pptx
+Echo $RC >[RUNDIR]/gpu-shot.rc
+SetEnv DECKCRAFT_LOG RAM:dc/gpu-2.txt
+RAM:dc/DeckCraft --gui-renderer GPU --window 900x560 --test-steps RAM:dc/steps.json RAM:dc/hello.pptx
+Echo $RC >[RUNDIR]/gpu-steps.rc
+RAM:dc/deckcraft-cli convert RAM:dc/gui-saved.pptx RAM:dc/gui-saved.md >[RUNDIR]/gpu-saved-md.txt
+Echo $RC >[RUNDIR]/gpu-saved-md.rc
+Copy RAM:dc/gpu-shot.png [RUNDIR]/gpu-shot.png
+Copy RAM:dc/steps-b.png [RUNDIR]/gpu-steps-b.png
+Copy RAM:dc/gpu-1.txt [RUNDIR]/gpu-1.txt
+Copy RAM:dc/gpu-2.txt [RUNDIR]/gpu-2.txt
+Copy RAM:dc/gui-saved.md [RUNDIR]/gpu-saved.md
+Echo "done" >[RUNDIR]/done.txt
